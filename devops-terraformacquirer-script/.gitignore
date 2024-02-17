@@ -1,0 +1,25 @@
+.idea/
+
+# Local .terraform directories
+**/.terraform/*
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+
+# Ignore CLI configuration files
+.terraformrc
+terraform.rc
+
+# Ignore trash from the project
+**/captura-tef-pdv-hml/list.txt
+**/captura-tef-pdv-hml/tfplan
+**/captura-tef-pdv-prd/list.txt
+**/captura-tef-pdv-prd/tfplan
+
+terraform.exe
+muxipay/.terraform*
+*/.terraform/*
+*/.terraform*
+
+#End of file

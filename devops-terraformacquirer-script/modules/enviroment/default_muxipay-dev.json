@@ -1,0 +1,14 @@
+{
+  "waf_global": "FMManagedWebACLV2-acl-global-basic-1660063739328",
+  "waf_regional": "FMManagedWebACLV2-acl-basic-1660051603057",
+  "region": "us-east-2",
+  "hosted_zone_id": "Z0389058DR6U7K9DF6T0",
+  "inbound_cidrs": "0.0.0.0/0",
+  "vpc": "vpc-0df31a6e2d113d8b7",
+  "restricted_subnets_ids": ["subnet-04f9462620240c5c1", "subnet-00c7176f1c6f72c32", "subnet-0961dd9a7d368e1b0"],
+  "public_subnets_ids": ["subnet-0956adabb1a865c9f", "subnet-0919b0c60fd95ced5", "subnet-0c80cc19ec025d0dd"],
+  "private_subnets_ids": ["subnet-0ca2d45be9d6ab5bc", "subnet-0b2b57acbb1da0623", "subnet-05d3e7f4611c12a23"],
+  "cloudfront_timeout": "60",
+  "cloudwatch_retention": "7",
+  "eip_allocation": "eipalloc-058d400313109ebdb"
+}
