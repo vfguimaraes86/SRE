@@ -1,0 +1,24 @@
+{{- if .Values.aws.targetGroupBinding.enabled }}
+{{- $serviceName := include "common.names.fullname" . -}}
+{{- $servicePort := .Values.service.port -}}
+apiVersion: elbv2.k8s.aws/v1beta1
+kind: TargetGroupBinding
+metadata:
+  annotations:
+    {{- include "common.annotations.standard" . | nindent 4 }}
+    {{- with .Values.aws.targetGroupBinding.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  labels:
+    {{- include "common.labels.standard" . | nindent 4 }}
+    {{- with .Values.aws.targetGroupBinding.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  name: {{ include "common.names.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  serviceRef:
+    name: {{ $serviceName }}
+    port: {{ $servicePort }}
+  targetGroupARN: {{ .Values.aws.targetGroupBinding.targetGroupARN }}
+{{- end }}

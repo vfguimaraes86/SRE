@@ -1,0 +1,387 @@
+nameOverride: "dock-app" #<+service.name>
+
+tags:
+  business_unit: "credit"
+  customer: "dock"
+  application : "dock-app"
+  env: "prd"
+  owner: "sre-issuing"
+  pci_scope: "false"
+
+datadog:
+  enabled: false
+  environment: "hml"
+  service: "dock-app" #<+stage.variables.releaseName>
+  version: "0.0.1" #<+artifact.tag>
+
+harness:
+  enabled: false
+  releaseName: "dock-app" #<+stage.variables.releaseName>
+  track: "stable"
+
+deployment:
+  enabled: false
+  annotations: {}
+  labels: {}
+  replicas: 1 #<+exportedVariables.getValue("stepGroup.REPLICAS.REPLICAS")>
+  podAnnotations: {}
+  podLabels: {} 
+
+  image:
+    repository: "conductorcr.azurecr.io/yoshi/yoshi-front"
+    tag: "75321" #<+pipeline.variables.tag>
+    imagePullPolicy: "IfNotPresent"
+
+  #Atenção: Os blocos a seguir são utilizados de forma literal dentro do deployment
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+
+  tolerations: {}
+
+  nodeSelector:
+    nodeLabel: "default"
+
+  affinity: {}
+
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: http
+    initialDelaySeconds: 60
+    failureThreshold: 30
+    periodSeconds: 10
+
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: http
+    initialDelaySeconds: 60
+    failureThreshold: 30
+    periodSeconds: 10
+
+  startupProbe:
+    httpGet:
+      path: /health
+      port: http
+    initialDelaySeconds: 30
+    failureThreshold: 15
+    periodSeconds: 10
+
+  command:
+  # - "/bin/sh"
+  # - "-c"
+
+  args:
+  # - "sleep 30"
+
+service:
+  enabled: false
+  annotations:
+    service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+  labels: {}
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+  - name: https
+    port: 443
+    targetPort: 8080
+
+configMap:
+  enabled: false
+  annotations: {}
+  labels: {}
+  values:
+    app_name: "dock-app"
+    app_version: "0.0.1"
+
+autoscaling:
+  enabled: false
+  annotations: {}
+  labels: {}
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 75
+  targetMemoryUtilizationPercentage: 75
+
+namespace:
+  enabled: false
+  annotations: {}
+  labels: {}
+
+azure:
+  registry:
+    enabled: false
+    registryNameOverride: ""
+    annotations: {}
+    labels: {}
+    name: conductorcr
+    server: conductorcr.azurecr.io
+    username: "conductorcr"
+    password: "credentials"
+
+  keyVault:
+    enabled: false
+    annotations: {}
+    labels: {}
+    refreshInterval: 1m
+    clientId: "credentials"
+    clientSecret: "credentials"
+    tenantId: "credentials"
+    vaultUrl: "credentials"
+    data:
+    - secretKey: secret-teste
+      key: secret/issuing-automation-test
+
+  csi:
+    storage:
+      containerMountPath: "/external-logs"
+      fileShareMountPath: "dock-app/logs"
+
+    persistentVolume:
+      enabled: false
+      annotations: {}
+      labels: {}
+      storage: "1Gi"
+      accessMode: "ReadWriteMany"
+      reclaimPolicy: "Retain"
+      mountOptions: []
+      csireadOnly: false
+      volumeHandle: "storageAccountName_fileShareName"
+      resourceGroup: "credentials"
+      shareName: "fileShareName"
+
+    persistentVolumeClaim:
+      enabled: false
+      claimOverride: ""
+      annotations: {}
+      labels: {}
+      accessMode: "ReadWriteMany"
+      storage: "1Gi"
+
+    storageClass:
+      enabled: false
+      storageClassnameOverride: ""
+      annotations: {}
+      labels: {}
+      reclaimPolicy: "Retain"
+      mountOptions: []
+      subscriptionID: "credentials"  
+      resourceGroup: "credentials"
+      storageAccount: "credentials"
+      shareName: "credentials"
+
+    secret:
+      enabled: false
+      annotations: {}
+      labels: {}
+      azurestorageaccountname: "credentials"
+      azurestorageaccountkey: "credentials"
+
+secret:
+  enabled: false
+  annotations: {}
+  labels: {}
+  values:
+    username: "username"
+    password: "password"
+
+serviceAccount:
+  enabled: false
+  annotations: {}
+  labels: {}
+  automount: false
+
+ingress:
+  enabled: false
+  annotations:
+    # alb.ingress.kubernetes.io/load-balancer-name: dts-setup-api
+    # alb.ingress.kubernetes.io/target-type: ip
+    # alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    # kubernetes.io/ingress.class: alb
+  labels: {}
+  className: "nginx"
+  defaultBackend:
+    enabled: false
+  tls: 
+    enabled: false
+    hosts:
+    - url: yoshi.dock.tech
+    - url: yoshi2.dock.tech
+    secretName: docktech
+    crt: |
+      -----BEGIN CERTIFICATE-----
+      credentials
+      -----END CERTIFICATE-----
+    key: |
+      -----BEGIN PRIVATE KEY-----
+      credentials
+      -----END PRIVATE KEY-----
+  hosts:
+  - url: yoshi.dock.tech
+    path: /
+    pathType: Prefix
+  - url: yoshi2.dock.tech
+    path: /v2
+    pathType: Prefix
+  servicePort: 80
+
+aws:
+  secretManager:
+    enabled: false
+    annotations: {}
+    labels: {}
+    region: "us-east-1"
+    refreshInterval: 1m
+    roleArn: "arn:aws:iam::123456789012:role/name" #define a specific role to limit access to certain secrets.role is a optional field that can be omitted for test purposes
+    secretRef: #Autenticação via secret
+      accessKey: "credentials"
+      secretAccessKey: "credentials"
+    jwt: {} #Autenticação via jwt
+    #  roleArn: "arn:aws:iam::123456789012:role/jwt-name"
+    data:
+      - secretKey: username
+        key: arn:aws:secretsmanager::123456789012:secret:id
+        property: username
+      - secretKey: password
+        key: arn:aws:secretsmanager::123456789012:secret:id
+        property: password
+
+  targetGroupBinding:
+    enabled: false
+    annotations: {}
+    labels: {}
+    targetGroupARN: "arn:aws:elasticloadbalancing::123456789012:targetgroup/id"
+
+istio:
+  virtualService:
+    enabled: false
+    annotations: {}
+    labels: {}
+    hosts: 
+    - url: "dock-app.dock.tech"
+    - url: "dock-app.conductor.com.br"
+    destination:
+    - name: "dock-app-v1"
+      uriPrefix: "/v1"
+      rewriteUri: "/"
+      destinationsubset: "v1"
+    - name: "dock-app-v2"
+      uriPrefix: "/v2"
+      rewriteUri: "/"
+      destinationsubset: "v2"
+
+  destinationRule:
+    enabled: false
+    annotations: {}
+    labels: {}
+    tlsMode: "DISABLE"
+    subsets:
+    - name: "dock-app-v1"
+      version: "v1"
+    - name: "dock-app-v2"
+      version: "v2"
+
+  gateway:
+    enabled: false
+    gatewaynameOverride: ""
+    annotations: {}
+    labels: {}
+    istio: "istio"
+    hosts: 
+    - url: "dock-app.dock.tech"
+    - url: "dock-app.conductor.com.br"
+    redirectTLS: "true"
+
+keda:
+  scaledObject:
+    enabled: false
+    annotations: {}
+    labels: {}
+    minReplicaCount: 2
+    maxReplicaCount: 8
+    pollingInterval: 10
+    cooldownPeriod: 10
+    triggers:
+    - type: kafka
+      metadata:
+        bootstrapServersFromEnv: KAFKA_BROKERS
+        consumerGroup: sesh-ledger-api-ENVIRONMENT-v1
+        topic: kfk.ENVIRONMENT.sesh.operation.accounting.cmd
+        lagThreshold: "1000"
+        offsetResetPolicy: earliest
+        version: 2.8.1 # KAFKA VERSION
+        sasl: scram_sha512
+        tls: enable
+        unsafeSasl: "true"
+      authenticationRef:
+        name: keda-sesh-ledger-worker-trigger-auth-kafka-credential-ENVIRONMENT
+    - type: kafka
+      metadata:
+        bootstrapServersFromEnv: KAFKA_BROKERS
+        consumerGroup: sesh-ledger-api-ENVIRONMENT-v1
+        topic: kfk.ENVIRONMENT.sesh.operation.escrow.cmd
+        lagThreshold: "1000"
+        offsetResetPolicy: earliest
+        version: 2.8.1 # KAFKA VERSION
+        sasl: scram_sha512
+        tls: enable
+        unsafeSasl: "true"
+      authenticationRef:
+        name: keda-sesh-ledger-worker-trigger-auth-kafka-credential-ENVIRONMENT
+
+  triggerAuthentication:
+    enabled: false
+    annotations: {}
+    labels: {}
+
+script:
+  enabled: false
+  annotations: {}
+  labels: {}
+
+  storage:
+    containerMountPath: "/scripts"
+    subPath: ""
+
+  values: 
+  - name: "bash.sh"
+    data: |
+      apt get update && apt get install -y python
+  - name: "requirements.txt"
+    data: |
+      azure-common==1.1.28
+      azure-core==1.29.1
+      azure-identity==1.14.0
+      azure-keyvault==4.2.0
+      azure-keyvault-certificates==4.7.0
+      azure-keyvault-keys==4.8.0
+      azure-keyvault-secrets==4.7.0
+      cryptography==42.0.3
+
+cronjob:
+  enabled: false
+  annotations: {}
+  labels: {}
+  image: "bitnami/kubectl:latest"
+  imagePullPolicy: "IfNotPresent"
+  command:
+  - "/bin/sh"
+  - "-c"
+  - "cat /scripts/requirements.txt && env"
+  args:
+  - "sleep 30"
+  schedule: "*/30 * * * *"
+  restartPolicy: "OnFailure"

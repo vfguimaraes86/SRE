@@ -1,0 +1,41 @@
+{{- if .Values.azure.csi.persistentVolume.enabled }}
+{{- $azureStorageClassName := include "common.names.azure.storageClass" . -}}
+{{- $azureStorageSecretName := include "common.names.azure.storageAccountCredentials" . -}}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  annotations:
+    {{- include "common.annotations.azure.csi" . | nindent 4 }}
+    {{- include "common.annotations.standard" . | nindent 4 }}
+    {{- with .Values.azure.csi.persistentVolume.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  labels:
+    {{- include "common.labels.standard" . | nindent 4 }}
+    {{- with .Values.azure.csi.persistentVolume.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  name: {{ include "common.names.azure.persistentVolume" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  capacity:
+    storage: {{ .Values.azure.csi.persistentVolume.storage }}
+  accessModes:
+    - {{ .Values.azure.csi.persistentVolume.accessMode }}
+  persistentVolumeReclaimPolicy: {{ .Values.azure.csi.persistentVolume.reclaimPolicy }}
+  storageClassName: {{ $azureStorageClassName }}
+  {{- with .Values.azure.csi.persistentVolume.mountOptions }}
+  mountOptions:
+    {{- toYaml . | nindent 2 }}
+  {{- end }}
+  csi:
+    driver: file.csi.azure.com
+    readOnly: {{ .Values.azure.csi.persistentVolume.csireadOnly }}
+    volumeHandle: {{ .Values.azure.csi.persistentVolume.volumeHandle }}
+    volumeAttributes:
+      resourceGroup: {{ .Values.azure.csi.persistentVolume.resourceGroup }}  # optional, only set this when storage account is not in the same resource group as agent node
+      shareName: {{ .Values.azure.csi.persistentVolume.shareName }} # only file share name, don't use full path
+    nodeStageSecretRef:
+      name: {{ $azureStorageSecretName }}
+      namespace: {{ .Release.Namespace }}
+{{- end }}

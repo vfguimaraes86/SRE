@@ -1,0 +1,5 @@
+name: helm-base-chart-iac
+squad: APE
+tribe: APE
+version: "2.0.0"
+language: helm

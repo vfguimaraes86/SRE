@@ -1,0 +1,64 @@
+{{- if .Values.cronjob.enabled }}
+{{- $serviceAccountName := include "common.names.fullname" . -}}
+{{- $configMapName := include "common.names.fullname" . -}}
+{{- $secretName := include "common.names.fullname" . -}}
+{{- $scriptName := include "common.names.script" . -}}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  annotations:
+    {{- include "common.annotations.standard" . | nindent 4 }}
+    {{- with .Values.cronjob.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  labels:
+    {{- include "common.labels.standard" . | nindent 4 }}
+    {{- with .Values.cronjob.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  name: {{ include "common.names.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  schedule: "{{ .Values.cronjob.schedule }}"
+  jobTemplate:
+    spec:
+      {{- if .Values.serviceAccount.enabled }}
+      serviceAccountName: {{ $serviceAccountName }}
+      {{- end }}
+      template:
+        spec:
+          containers:
+          - name: {{ include "common.names.fullname" . }}
+            image: {{ .Values.cronjob.image }}
+            imagePullPolicy: {{ .Values.cronjob.imagePullPolicy }}
+            envFrom:
+            {{- if .Values.configMap.enabled }}
+            - configMapRef:
+                name:  {{ $configMapName }}
+            {{- end }}
+            {{- if .Values.secret.enabled }}
+            - secretRef:
+                name:  {{ $secretName }}
+            {{- end }}
+            {{- with .Values.cronjob.args }}
+            args:
+              {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.cronjob.command }}
+            command:
+              {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- if .Values.script.enabled }}
+            volumeMounts:
+            - name: {{ $scriptName }}
+              mountPath: {{ .Values.script.storage.containerMountPath }}
+            {{- end }}
+          restartPolicy: {{ .Values.cronjob.restartPolicy }}
+          {{- if .Values.script.enabled }}
+          volumes:
+          - configMap:
+              defaultMode: 420
+              name: {{ $scriptName }}
+            name: {{ $scriptName }}
+          {{- end }}
+{{- end }}

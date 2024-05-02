@@ -1,0 +1,47 @@
+{{- if .Values.istio.gateway.enabled}}
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  annotations:
+    {{- include "common.annotations.standard" . | nindent 4 }}
+    {{- with .Values.istio.gateway.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  labels:
+    {{- include "common.labels.standard" . | nindent 4 }}
+    {{- with .Values.istio.gateway.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  name: {{ include "common.names.istio.gateway" . }}
+  namespace: {{ .Release.Namespace }} 
+spec:
+  selector:
+    istio: {{ .Values.istio.gateway.istio | default "ingress" }}
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    {{- if .Values.istio.gateway.redirectTLS }}
+    tls:
+      httpsRedirect: true
+    {{- end }}
+    hosts:
+    {{- range .Values.istio.gateway.hosts }} 
+    - {{ .url }}
+    {{- end }}
+  {{- if .Values.istio.gateway.redirectTLS }}
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      privateKey: /etc/istio/ingressgateway-certs/tls.key
+      serverCertificate: /etc/istio/ingressgateway-certs/tls.crt
+    hosts:
+    {{- range .Values.istio.gateway.hosts }} 
+    - {{ .url }}
+    {{- end }}
+  {{- end }}
+{{- end }}

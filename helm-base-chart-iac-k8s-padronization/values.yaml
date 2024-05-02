@@ -1,0 +1,80 @@
+redis:
+  enabled: false
+  name: redis
+  namespace:
+    create: false
+  replicas: 3
+  cluster: false
+
+datadog:
+  enabled: false
+
+harness:
+  enabled: false
+
+deployment:
+  enabled: false
+
+service:
+  enabled: false
+
+configMap:
+  enabled: false
+
+autoscaling:
+  enabled: false
+
+namespace:
+  enabled: false
+
+azure: 
+  registry:
+    enabled: false
+  keyVault:
+    enabled: false
+  csi:
+    persistentVolume:
+      enabled: false
+    persistentVolumeClaim:
+      enabled: false
+    storageClass:
+      enabled: false
+    secret:
+      enabled: false
+
+secret:
+  enabled: false
+
+serviceAccount:
+  enabled: false
+
+ingress:
+  enabled: false
+
+aws:
+  secretManager:
+    enabled: false
+
+  targetGroupBinding:
+    enabled: false
+
+istio:
+  virtualService:
+    enabled: false
+  destinationRule:
+    enabled: false
+  gateway:
+    enabled: false
+
+keda:
+  scaledObject:
+    enabled: false
+    
+  triggerAuthentication:
+    enabled: false
+
+script:
+  enabled: false
+
+cronjob:
+  enabled: false

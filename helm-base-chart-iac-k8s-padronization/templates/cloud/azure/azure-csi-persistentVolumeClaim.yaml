@@ -1,0 +1,27 @@
+{{- if .Values.azure.csi.persistentVolumeClaim.enabled }}
+{{- $azureStorageClassName := include "common.names.azure.storageClass" . -}}
+{{- $azurePersistentVolumeName := include "common.names.azure.persistentVolume" . -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+    {{- include "common.annotations.standard" . | nindent 4 }}
+    {{- with .Values.azure.csi.persistentVolumeClaim.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  labels:
+    {{- include "common.labels.standard" . | nindent 4 }}
+    {{- with .Values.azure.csi.persistentVolumeClaim.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  name: {{ include "common.names.azure.persistentVolume" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  accessModes:
+    - {{ .Values.azure.csi.persistentVolumeClaim.accessMode }}
+  storageClassName: {{ $azureStorageClassName }}
+  volumeName: {{ $azurePersistentVolumeName }}
+  resources:
+    requests:
+      storage: {{ .Values.azure.csi.persistentVolumeClaim.storage }}
+{{- end }}

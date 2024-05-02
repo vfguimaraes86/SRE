@@ -1,0 +1,29 @@
+{{- if .Values.istio.destinationRule.enabled}}
+{{- $serviceName := include "common.names.fullname" . -}}
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  annotations:
+    {{- include "common.annotations.standard" . | nindent 4 }}
+    {{- with .Values.istio.destinationRule.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  labels:
+    {{- include "common.labels.standard" . | nindent 4 }}
+    {{- with .Values.istio.destinationRule.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  name: {{ include "common.names.fullname" . }}
+  namespace: {{ .Release.Namespace }} 
+spec:
+  host: {{ $serviceName }}
+  trafficPolicy:
+    tls:
+      mode: {{ .Values.istio.destinationRule.tlsMode }}
+  subsets:
+  {{- range .Values.istio.destinationRule.subsets }} 
+  - name: {{ .name }}
+    labels:
+      version: {{ .version }}
+  {{- end }}  
+{{- end }}

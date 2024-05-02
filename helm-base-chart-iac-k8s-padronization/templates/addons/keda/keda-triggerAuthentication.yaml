@@ -1,0 +1,26 @@
+{{- if .Values.keda.triggerAuthentication.enabled }}
+{{- $awsSecretManagerName := include "common.names.aws.secretManager" . -}}
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  annotations:
+    {{- include "common.annotations.standard" . | nindent 4 }}
+    {{- with .Values.keda.triggerAuthentication.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  labels:
+    {{- include "common.labels.standard" . | nindent 4 }}
+    {{- with .Values.keda.triggerAuthentication.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  name: {{ include "common.names.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  secretTargetRef:
+  - parameter: username
+    name: {{ $awsSecretManagerName }}
+    key: username
+  - parameter: password
+    name: {{ $awsSecretManagerName }}
+    key: password
+{{- end }}

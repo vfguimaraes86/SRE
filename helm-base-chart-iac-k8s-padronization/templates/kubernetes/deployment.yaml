@@ -1,0 +1,182 @@
+{{- if .Values.deployment.enabled }}
+{{- $serviceAccountName := include "common.names.fullname" . -}}
+{{- $azureRegistrySecretName := include "common.names.azure.registry" . -}}
+{{- $configMapName := include "common.names.fullname" . -}}
+{{- $secretName := include "common.names.fullname" . -}}
+{{- $awsSecretManagerName := include "common.names.aws.secretManager" . -}}
+{{- $azureKeyVaultName := include "common.names.azure.keyVault" . -}}
+{{- $azureCsiName := include "common.names.azure.persistentVolume" . -}}
+{{- $scriptName := include "common.names.script" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    {{- include "common.annotations.standard" . | nindent 4 }}
+    {{- with .Values.deployment.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  labels:
+    {{- if .Values.harness.enabled }}
+    {{- include "common.labels.harness" . | nindent 4 }}
+    {{- end }}
+    {{- if .Values.datadog.enabled }}
+    {{- include "common.labels.datadog" . | nindent 4 }}
+    {{- end }}
+    {{- include "common.labels.standard" . | nindent 4 }}
+    {{- with .Values.deployment.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  name: {{ include "common.names.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.deployment.replicas }}
+  selector:
+    matchLabels:
+      {{- if .Values.harness.enabled }}
+      {{- include "common.labels.harness" . | nindent 6 }}
+      {{- end }}
+      {{- include "common.labels.matchLabels" . | nindent 6 }}
+  strategy:
+  {{- if not .Values.deployment.strategy }}
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  {{- else }}
+    {{- toYaml .Values.deployment.strategy | nindent 4 }}  
+  {{- end }} 
+  template:
+    metadata:
+      annotations:
+        {{- include "common.annotations.standard" . | nindent 8 }}
+        {{- with .Values.deployment.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- if .Values.harness.enabled }}
+        {{- include "common.labels.harness" . | nindent 8 }}
+        {{- end }}
+        {{- if .Values.datadog.enabled }}
+        {{- include "common.labels.datadog" . | nindent 8 }}
+        {{- end }}
+        {{- include "common.labels.matchLabels" . | nindent 8 }}
+        {{- with .Values.deployment.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- if .Values.serviceAccount.enabled }}
+      serviceAccountName: {{ $serviceAccountName }}
+      {{- end }}
+      {{- with .Values.deployment.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.deployment.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      affinity:
+      {{- if not .Values.deployment.affinity }}
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    {{- if .Values.harness.enabled }}
+                    {{- include "common.labels.harness" . | nindent 20 }}
+                    {{- end }}
+                    {{- include "common.labels.matchLabels" . | nindent 20 }}
+                topologyKey: topology.kubernetes.io/zone
+              weight: 100    
+            - podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    {{- if .Values.harness.enabled }}
+                    {{- include "common.labels.harness" . | nindent 20 }}
+                    {{- end }}
+                    {{- include "common.labels.matchLabels" . | nindent 20 }}
+                topologyKey: kubernetes.io/hostname
+              weight: 90      
+      {{- else }}
+        {{- toYaml .Values.deployment.affinity | nindent 8 }}  
+      {{- end }}
+      {{- if or (.Values.azure.registry.enabled) (.Values.azure.registry.registryNameOverride) }}
+      imagePullSecrets:
+      - name: {{ $azureRegistrySecretName }}
+      {{- end }}
+      containers:
+        - name: {{ include "common.names.fullname" . }}
+          image: {{ .Values.deployment.image.repository }}:{{ .Values.deployment.image.tag }}
+          imagePullPolicy: {{ .Values.deployment.image.imagePullPolicy }}
+          {{- with .Values.deployment.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.deployment.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.deployment.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.deployment.startupProbe }}
+          startupProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- if .Values.service.enabled }}
+          ports:
+          {{- range .Values.service.ports }}
+          - name: {{ .name }}
+            containerPort: {{ .targetPort }}
+          {{- end }}
+          {{- end }}
+          envFrom:
+            {{- if .Values.configMap.enabled }}
+            - configMapRef:
+                name:  {{ $configMapName }}
+            {{- end }}
+            {{- if .Values.secret.enabled }}
+            - secretRef:
+                name:  {{ $secretName }}
+            {{- end }}
+            {{- if .Values.aws.secretManager.enabled }}
+            - secretRef:
+                name:  {{ $awsSecretManagerName }}
+            {{- end }}
+            {{- if .Values.azure.keyVault.enabled }}
+            - secretRef:
+                name:  {{ $azureKeyVaultName }}
+            {{- end }}
+          {{- with .Values.deployment.args }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.deployment.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+          {{- if or (.Values.azure.csi.persistentVolumeClaim.enabled) ((.Values.azure.csi.persistentVolumeClaim.claimOverride))}}
+          - name: {{ $azureCsiName }}
+            mountPath: {{ .Values.azure.csi.storage.containerMountPath }}
+            subPath: {{ .Values.azure.csi.storage.fileShareMountPath }}
+          {{- end }}
+          {{- if .Values.script.enabled }}
+          - name: {{ $scriptName }}
+            mountPath: {{ .Values.script.storage.containerMountPath }}
+            subPath: {{ .Values.script.storage.subPath }}
+          {{- end }}
+      volumes:
+      {{- if or (.Values.azure.csi.persistentVolumeClaim.enabled) (.Values.azure.csi.persistentVolumeClaim.claimOverride) }}
+      - name: {{ $azureCsiName }}
+        persistentVolumeClaim:
+          claimName: {{ $azureCsiName }}
+      {{- end }}
+      {{- if .Values.script.enabled }}
+      - configMap:
+          defaultMode: 420
+          name: {{ $scriptName }}
+        name: {{ $scriptName }}
+      {{- end }}
+{{- end }}
